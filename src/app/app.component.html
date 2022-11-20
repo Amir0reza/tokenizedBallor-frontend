@@ -88,10 +88,12 @@
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
                 >
                     <div
-                        *ngIf="blocksRemainingStr !== '0'"  
+                        *ngIf="blocksRemainingStr !== '0'"
                         class="card gap-3 text-black fw-bold divBgColor cardBig"
                     >
-                        <p class="pUpSmallTopSpace card-text">Block remaining to vote:</p>
+                        <p class="pUpSmallTopSpace card-text">
+                            Block remaining to vote:
+                        </p>
                         <p class="pDownSmallTopSpace">
                             {{ blocksRemaining }}
                         </p>
@@ -100,7 +102,9 @@
                         *ngIf="blocksRemainingStr == '0'"
                         class="card gap-3 text-black fw-bold divBgColor cardBig"
                     >
-                        <p class="pUpSmallTopSpace card-text">voting power is:</p>
+                        <p class="pUpSmallTopSpace card-text">
+                            voting power is:
+                        </p>
                         <p class="pDownSmallTopSpace">
                             {{ votingPower }}
                         </p>
@@ -109,7 +113,9 @@
                         *ngIf="blocksRemainingStr == '0'"
                         class="card gap-3 text-black fw-bold divBgColor cardBig"
                     >
-                        <p class="pUpSmallTopSpace card-text">Winning proposal is:</p>
+                        <p class="pUpSmallTopSpace card-text">
+                            Winning proposal is:
+                        </p>
                         <p class="pDownSmallTopSpace">
                             {{ winningProposal }}
                         </p>
@@ -118,7 +124,9 @@
                         *ngIf="blocksRemainingStr == '0'"
                         class="card gap-3 text-black fw-bold divBgColor cardBig"
                     >
-                        <p class="pUpSmallTopSpace card-text">Proposal won with votes:</p>
+                        <p class="pUpSmallTopSpace card-text">
+                            Proposal won with votes:
+                        </p>
                         <p class="pDownSmallTopSpace">
                             {{ winningVotes }}
                         </p>
@@ -169,29 +177,21 @@
                 <div
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
                 >
-                    <p class="fw-bold text-black pUpSmallTopSpace card-text">Vote with permit</p>
+                    <p class="fw-bold text-black pUpSmallTopSpace card-text">
+                        Delegate votes
+                    </p>
                     <input
                         class="pDownSmallTopSpace inpText"
-                        #proposalId
-                        type="number"
-                        min="1"
-                        max="4"
-                        placeholder="Proposal"
-                    />
-                    <input
-                        class="pDownSmallTopSpace inpText"
-                        #voteAmount
-                        type="number"
-                        min="1"
-                        [max]="votingPower"
-                        placeholder="number of votes"
+                        #delegateAccount
+                        type="string"
+                        placeholder="Delegee account"
                     />
                     <button
-                        (click)="vote(proposalId.value, voteAmount.value)"
+                        (click)="delegateVote(delegateAccount.value)"
                         type="button"
                         class="btn btn-sm btn-success fw-bold mx-2 buttonSize"
                     >
-                        Vote
+                        Delegate
                     </button>
                 </div>
             </div>

@@ -73,7 +73,7 @@ export class AppComponent {
                 this.tokenContract = new ethers.Contract(
                     this.ERC20VOTES_ADDRESS!,
                     myERC20TokenJson.abi,
-                    this.provider
+                    this.wallet
                 )
 
                 this.tokenContract["balanceOf"](this.walletAddress).then(
@@ -98,7 +98,7 @@ export class AppComponent {
                 this.ballotContract = new ethers.Contract(
                     this.BALLOT_ADDRESS!,
                     ballotJson.abi,
-                    this.provider
+                    this.wallet
                 )
                 this.ballotContract["targetBlockNumber"]().then(
                     (targetBlockBg: BigNumber) => {
@@ -157,7 +157,7 @@ export class AppComponent {
                         this.tokenContract = new ethers.Contract(
                             ans.result,
                             myERC20TokenJson.abi,
-                            this.provider
+                            wal
                         )
                     })
 
@@ -168,7 +168,7 @@ export class AppComponent {
                         this.ballotContract = new ethers.Contract(
                             ans.result,
                             ballotJson.abi,
-                            this.provider
+                            wal
                         )
                         this.ballotContract["targetBlockNumber"]().then(
                             (targetBlockBg: BigNumber) => {
@@ -232,12 +232,13 @@ export class AppComponent {
                         )
                         this.ballotContract!["winningProposal"]().then(
                             (winnerIdx: any) => {
-                                this.ballotContract!["proposals"](winnerIdx).then(
-                                    (winner: any) => {
-                                        console.log(winner.voteCount)
-                                        this.winningVotes = winner.voteCount.toString()
-                                    }
-                                )
+                                this.ballotContract!["proposals"](
+                                    winnerIdx
+                                ).then((winner: any) => {
+                                    console.log(winner.voteCount)
+                                    this.winningVotes =
+                                        winner.voteCount.toString()
+                                })
                             }
                         )
                     }
@@ -300,17 +301,18 @@ export class AppComponent {
         }
     }
 
-    voteWithPermit(proposalId: string, voteAmount: string) {
+    delegateVote(account: string) {
         if (typeof this.provider !== "undefined") {
-            console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
-            this.ballotContract!.connect(this.wallet!)
-                ["vote"](proposalId, voteAmount)
-                .then((txResponse: ethers.providers.TransactionResponse) => {
+            console.log(`Trying to delegate votes to ${account}`)
+
+            this.tokenContract!["delegate"](account).then(
+                (txResponse: ethers.providers.TransactionResponse) => {
                     this.listenForTransactionToMine(
                         txResponse,
                         this.provider!
                     ).then(() => {})
-                })
+                }
+            )
         }
     }
 
