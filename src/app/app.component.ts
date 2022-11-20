@@ -1,12 +1,9 @@
+import { HttpClient } from "@angular/common/http"
 import { Component } from "@angular/core"
 import { BigNumber, ethers } from "ethers"
 
 import myERC20TokenJson from "../../../assets/MyERC20Votes.json"
 import ballotJson from "../../../assets/TokenizedBallot.json"
-import contract_addresses from "../../../contract-addresses.json"
-
-const ERC20VOTES_ADDRESS = contract_addresses.ERC20VOTES_ADDRESS
-const BALLOT_ADDRESS = contract_addresses.BALLOT_ADDRESS
 
 declare global {
     interface Window {
@@ -39,6 +36,8 @@ export class AppComponent {
         | ethers.providers.Web3Provider
         | undefined
     etherBalance: number | undefined
+    ERC20VOTES_ADDRESS: string | undefined
+    BALLOT_ADDRESS: string | undefined
     tokenContract: ethers.Contract | undefined
     ballotContract: ethers.Contract | undefined
     tokenBalance: number | undefined
@@ -51,9 +50,19 @@ export class AppComponent {
 
     abiCoder = new ethers.utils.AbiCoder()
 
-    constructor() {
+    constructor(private http: HttpClient) {
         this.txHash = "0x"
         this.counterTokenRequest = 0
+        this.http
+            .get<any>("http://localhost:3000/token-address")
+            .subscribe((ans) => {
+                this.ERC20VOTES_ADDRESS = ans.result
+            })
+        this.http
+            .get<any>("http://localhost:3000/ballot-address")
+            .subscribe((ans) => {
+                this.BALLOT_ADDRESS = ans.result
+            })
     }
 
     createWallet() {
@@ -63,30 +72,42 @@ export class AppComponent {
         this.wallet.getBalance().then((balanceBg) => {
             this.etherBalance = parseFloat(ethers.utils.formatEther(balanceBg))
         })
-        this.tokenContract = new ethers.Contract(
-            ERC20VOTES_ADDRESS,
-            myERC20TokenJson.abi,
-            this.provider
-        )
-        this.ballotContract = new ethers.Contract(
-            BALLOT_ADDRESS,
-            ballotJson.abi,
-            this.provider
-        )
-        this.tokenContract["balanceOf"](this.wallet.address).then(
-            (balanceBg: BigNumber) => {
-                this.tokenBalance = parseFloat(
-                    ethers.utils.formatEther(balanceBg)
+
+        this.http
+            .get<any>("http://localhost:3000/token-address")
+            .subscribe((ans) => {
+                this.ERC20VOTES_ADDRESS = ans.result
+                this.tokenContract = new ethers.Contract(
+                    this.ERC20VOTES_ADDRESS!,
+                    myERC20TokenJson.abi,
+                    this.provider
                 )
-            }
-        )
-        this.tokenContract["getVotes"](this.wallet.address).then(
-            (votingPowerBg: BigNumber) => {
-                this.votingPower = parseFloat(
-                    ethers.utils.formatEther(votingPowerBg)
+
+                this.tokenContract["balanceOf"](this.walletAddress).then(
+                    (balanceBg: BigNumber) => {
+                        this.tokenBalance = parseFloat(
+                            ethers.utils.formatEther(balanceBg)
+                        )
+                    }
                 )
-            }
-        )
+                this.tokenContract["getVotes"](this.walletAddress).then(
+                    (votingPowerBg: BigNumber) => {
+                        this.votingPower = parseFloat(
+                            ethers.utils.formatEther(votingPowerBg)
+                        )
+                    }
+                )
+            })
+        this.http
+            .get<any>("http://localhost:3000/ballot-address")
+            .subscribe((ans) => {
+                this.BALLOT_ADDRESS = ans.result
+                this.ballotContract = new ethers.Contract(
+                    this.BALLOT_ADDRESS!,
+                    ballotJson.abi,
+                    this.provider
+                )
+            })
     }
 
     connectMetamask() {
@@ -98,16 +119,29 @@ export class AppComponent {
                 this.provider = web3Prov
                 const wal = web3Prov.getSigner()
                 this.wallet = wal
-                this.tokenContract = new ethers.Contract(
-                    ERC20VOTES_ADDRESS,
-                    myERC20TokenJson.abi,
-                    this.provider
-                )
-                this.ballotContract = new ethers.Contract(
-                    BALLOT_ADDRESS,
-                    ballotJson.abi,
-                    this.provider
-                )
+
+                this.http
+                    .get<any>("http://localhost:3000/token-address")
+                    .subscribe((ans) => {
+                        this.ERC20VOTES_ADDRESS = ans.result
+                        this.tokenContract = new ethers.Contract(
+                            ans.result,
+                            myERC20TokenJson.abi,
+                            this.provider
+                        )
+                    })
+
+                this.http
+                    .get<any>("http://localhost:3000/ballot-address")
+                    .subscribe((ans) => {
+                        this.BALLOT_ADDRESS = ans.result
+                        this.ballotContract = new ethers.Contract(
+                            ans.result,
+                            ballotJson.abi,
+                            this.provider
+                        )
+                    })
+
                 wal.getAddress().then((add) => {
                     this.walletAddress = add
                     web3Prov.getBalance(add).then((balanceBg) => {
@@ -115,20 +149,22 @@ export class AppComponent {
                             ethers.utils.formatEther(balanceBg)
                         )
                     })
-                    this.tokenContract!["balanceOf"](add).then(
-                        (balanceBg: BigNumber) => {
-                            this.tokenBalance = parseFloat(
-                                ethers.utils.formatEther(balanceBg)
-                            )
-                        }
-                    )
-                    this.tokenContract!["getVotes"](add).then(
-                        (votingPowerBg: BigNumber) => {
-                            this.votingPower = parseFloat(
-                                votingPowerBg.toString()
-                            )
-                        }
-                    )
+                    if (this.ERC20VOTES_ADDRESS) {
+                        this.tokenContract!["balanceOf"](add).then(
+                            (balanceBg: BigNumber) => {
+                                this.tokenBalance = parseFloat(
+                                    ethers.utils.formatEther(balanceBg)
+                                )
+                            }
+                        )
+                        this.tokenContract!["getVotes"](add).then(
+                            (votingPowerBg: BigNumber) => {
+                                this.votingPower = parseFloat(
+                                    votingPowerBg.toString()
+                                )
+                            }
+                        )
+                    }
                 })
             } catch (error) {
                 console.log(error)

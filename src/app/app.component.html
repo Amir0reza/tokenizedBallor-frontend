@@ -33,6 +33,18 @@
                         {{ walletAddress }}
                     </p>
                 </div>
+                <p class="lead fw-bold text-black">The token contract address is:</p>
+                <div>
+                    <p class="fw-bold text-black">
+                        {{ ERC20VOTES_ADDRESS }}
+                    </p>
+                </div>
+                <p class="lead fw-bold text-black">The ballot contract address is:</p>
+                <div>
+                    <p class="fw-bold text-black">
+                        {{ BALLOT_ADDRESS }}
+                    </p>
+                </div>
                 <div
                     *ngIf="txHash === '0x'"
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center"
@@ -72,14 +84,6 @@
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
                 >
                     <p class="fw-bold text-black pUpSmallTopSpace">Request voting tokens:</p>
-                    <input
-                        class="pDownSmallTopSpace inpText"
-                        #reqTokenAmount
-                        type="number"
-                        min="1"
-                        max="10"
-                        placeholder="Token amount"
-                    />
                     <button
                         (click)="requestToken()"
                         type="button"
