@@ -36,6 +36,8 @@ export class AppComponent {
     txHash: string
     blocksRemaining: number
     blocksRemainingStr: string
+    winningProposal: string | undefined
+    winningVotes: string | undefined
 
     abiCoder = new ethers.utils.AbiCoder()
 
@@ -117,6 +119,22 @@ export class AppComponent {
                 this.ballotContract!["votingPower"](this.walletAddress).then(
                     (votingPowerBG: BigNumber) => {
                         this.votingPower = parseFloat(votingPowerBG.toString())
+                    }
+                )
+                this.ballotContract["winnerName"]().then(
+                    (winnerStr: string) => {
+                        this.winningProposal =
+                            ethers.utils.parseBytes32String(winnerStr)
+                    }
+                )
+                this.ballotContract["winningProposal"]().then(
+                    (winnerIdx: any) => {
+                        this.ballotContract!["proposals"](winnerIdx).then(
+                            (winner: any) => {
+                                console.log(winner.voteCount)
+                                this.winningVotes = winner.voteCount.toString()
+                            }
+                        )
                     }
                 )
             })
@@ -206,6 +224,22 @@ export class AppComponent {
                                 votingPowerBG.toString()
                             )
                         })
+                        this.ballotContract!["winnerName"]().then(
+                            (winnerStr: string) => {
+                                this.winningProposal =
+                                    ethers.utils.parseBytes32String(winnerStr)
+                            }
+                        )
+                        this.ballotContract!["winningProposal"]().then(
+                            (winnerIdx: any) => {
+                                this.ballotContract!["proposals"](winnerIdx).then(
+                                    (winner: any) => {
+                                        console.log(winner.voteCount)
+                                        this.winningVotes = winner.voteCount.toString()
+                                    }
+                                )
+                            }
+                        )
                     }
                 })
             } catch (error) {
@@ -253,6 +287,20 @@ export class AppComponent {
     }
 
     vote(proposalId: string, voteAmount: string) {
+        if (typeof this.provider !== "undefined") {
+            console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
+            this.ballotContract!.connect(this.wallet!)
+                ["vote"](proposalId, voteAmount)
+                .then((txResponse: ethers.providers.TransactionResponse) => {
+                    this.listenForTransactionToMine(
+                        txResponse,
+                        this.provider!
+                    ).then(() => {})
+                })
+        }
+    }
+
+    voteWithPermit(proposalId: string, voteAmount: string) {
         if (typeof this.provider !== "undefined") {
             console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
             this.ballotContract!.connect(this.wallet!)

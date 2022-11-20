@@ -105,6 +105,24 @@
                             {{ votingPower }}
                         </p>
                     </div>
+                    <div
+                        *ngIf="blocksRemainingStr == '0'"
+                        class="card gap-3 text-black fw-bold divBgColor cardBig"
+                    >
+                        <p class="pUpSmallTopSpace card-text">Winning proposal is:</p>
+                        <p class="pDownSmallTopSpace">
+                            {{ winningProposal }}
+                        </p>
+                    </div>
+                    <div
+                        *ngIf="blocksRemainingStr == '0'"
+                        class="card gap-3 text-black fw-bold divBgColor cardBig"
+                    >
+                        <p class="pUpSmallTopSpace card-text">Proposal won with votes:</p>
+                        <p class="pDownSmallTopSpace">
+                            {{ winningVotes }}
+                        </p>
+                    </div>
                 </div>
                 <div
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
@@ -137,7 +155,35 @@
                         #voteAmount
                         type="number"
                         min="0"
-                        [max]="votingTokens"
+                        [max]="votingPower"
+                        placeholder="number of votes"
+                    />
+                    <button
+                        (click)="vote(proposalId.value, voteAmount.value)"
+                        type="button"
+                        class="btn btn-sm btn-success fw-bold mx-2 buttonSize"
+                    >
+                        Vote
+                    </button>
+                </div>
+                <div
+                    class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
+                >
+                    <p class="fw-bold text-black pUpSmallTopSpace card-text">Vote with permit</p>
+                    <input
+                        class="pDownSmallTopSpace inpText"
+                        #proposalId
+                        type="number"
+                        min="1"
+                        max="4"
+                        placeholder="Proposal"
+                    />
+                    <input
+                        class="pDownSmallTopSpace inpText"
+                        #voteAmount
+                        type="number"
+                        min="1"
+                        [max]="votingPower"
                         placeholder="number of votes"
                     />
                     <button
