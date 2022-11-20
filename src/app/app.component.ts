@@ -11,18 +11,6 @@ declare global {
     }
 }
 
-export class RequestTokensDTO {
-    "to": string
-    "counter": string
-    "signature": string
-
-    constructor(_to: string, _counter: string, _signature: string) {
-        this.to = _to
-        this.counter = _counter
-        this.signature = _signature
-    }
-}
-
 @Component({
     selector: "app-root",
     templateUrl: "./app.component.html",
@@ -41,18 +29,18 @@ export class AppComponent {
     tokenContract: ethers.Contract | undefined
     ballotContract: ethers.Contract | undefined
     tokenBalance: number | undefined
+    votingTokens: number | undefined
     votingPower: number | undefined
 
     metamaskConnected: boolean | undefined
     txHash: string
-
-    counterTokenRequest: number
+    blocksRemaining: number
+    blocksRemainingStr: string
 
     abiCoder = new ethers.utils.AbiCoder()
 
     constructor(private http: HttpClient) {
         this.txHash = "0x"
-        this.counterTokenRequest = 0
         this.http
             .get<any>("http://localhost:3000/token-address")
             .subscribe((ans) => {
@@ -63,10 +51,13 @@ export class AppComponent {
             .subscribe((ans) => {
                 this.BALLOT_ADDRESS = ans.result
             })
+        this.blocksRemaining = 0
+        this.blocksRemainingStr = "1"
     }
 
     createWallet() {
-        this.provider = ethers.getDefaultProvider("goerli")
+        const localProv = ethers.getDefaultProvider("goerli")
+        this.provider = localProv
         this.wallet = ethers.Wallet.createRandom().connect(this.provider)
         this.walletAddress = this.wallet.address
         this.wallet.getBalance().then((balanceBg) => {
@@ -91,9 +82,9 @@ export class AppComponent {
                     }
                 )
                 this.tokenContract["getVotes"](this.walletAddress).then(
-                    (votingPowerBg: BigNumber) => {
-                        this.votingPower = parseFloat(
-                            ethers.utils.formatEther(votingPowerBg)
+                    (votingTokensBg: BigNumber) => {
+                        this.votingTokens = parseFloat(
+                            votingTokensBg.toString()
                         )
                     }
                 )
@@ -106,6 +97,27 @@ export class AppComponent {
                     this.BALLOT_ADDRESS!,
                     ballotJson.abi,
                     this.provider
+                )
+                this.ballotContract["targetBlockNumber"]().then(
+                    (targetBlockBg: BigNumber) => {
+                        localProv.getBlock("latest").then((currentBlockBg) => {
+                            const currentBlock = currentBlockBg.number
+                            const targetBlock = parseFloat(
+                                targetBlockBg.toString()
+                            )
+                            this.blocksRemaining =
+                                targetBlock - currentBlock > 0
+                                    ? targetBlock - currentBlock
+                                    : 0
+                            this.blocksRemainingStr =
+                                targetBlock - currentBlock > 0 ? "1" : "0"
+                        })
+                    }
+                )
+                this.ballotContract!["votingPower"](this.walletAddress).then(
+                    (votingPowerBG: BigNumber) => {
+                        this.votingPower = parseFloat(votingPowerBG.toString())
+                    }
                 )
             })
     }
@@ -140,6 +152,27 @@ export class AppComponent {
                             ballotJson.abi,
                             this.provider
                         )
+                        this.ballotContract["targetBlockNumber"]().then(
+                            (targetBlockBg: BigNumber) => {
+                                web3Prov
+                                    .getBlock("latest")
+                                    .then((currentBlockBg) => {
+                                        const currentBlock =
+                                            currentBlockBg.number
+                                        const targetBlock = parseFloat(
+                                            targetBlockBg.toString()
+                                        )
+                                        this.blocksRemaining =
+                                            targetBlock - currentBlock > 0
+                                                ? targetBlock - currentBlock
+                                                : 0
+                                        this.blocksRemainingStr =
+                                            targetBlock - currentBlock > 0
+                                                ? "1"
+                                                : "0"
+                                    })
+                            }
+                        )
                     })
 
                 wal.getAddress().then((add) => {
@@ -158,12 +191,21 @@ export class AppComponent {
                             }
                         )
                         this.tokenContract!["getVotes"](add).then(
-                            (votingPowerBg: BigNumber) => {
-                                this.votingPower = parseFloat(
-                                    votingPowerBg.toString()
+                            (votingTokensBg: BigNumber) => {
+                                this.votingTokens = parseFloat(
+                                    votingTokensBg.toString()
                                 )
                             }
                         )
+                    }
+                    if (this.BALLOT_ADDRESS) {
+                        this.ballotContract!["votingPower"](
+                            this.walletAddress
+                        ).then((votingPowerBG: BigNumber) => {
+                            this.votingPower = parseFloat(
+                                votingPowerBG.toString()
+                            )
+                        })
                     }
                 })
             } catch (error) {
@@ -176,21 +218,38 @@ export class AppComponent {
     }
 
     requestToken() {
-        this.counterTokenRequest += 1
-        const messageHash = ethers.utils.keccak256(
-            this.abiCoder.encode(
-                ["address", "uint256"],
-                [this.walletAddress, this.counterTokenRequest]
-            )
-        )
-        this.wallet?.signMessage(messageHash).then((signature) => {
-            const sendData = new RequestTokensDTO(
-                this.walletAddress!,
-                this.counterTokenRequest.toString(),
-                signature
-            )
-            console.log(sendData)
-        })
+        this.http
+            .get<any>("http://localhost:3000/token-request-counter")
+            .subscribe((ans) => {
+                const counterTokenRequest = ans.result
+                const messageHash = ethers.utils.keccak256(
+                    this.abiCoder.encode(
+                        ["address", "uint256"],
+                        [this.walletAddress, counterTokenRequest]
+                    )
+                )
+                this.wallet?.signMessage(messageHash).then((signature) => {
+                    const sendData = {
+                        to: this.walletAddress,
+                        counter: counterTokenRequest.toString(),
+                        signature: signature,
+                    }
+
+                    this.http
+                        .post<any>(
+                            "http://localhost:3000/request-tokens",
+                            sendData
+                        )
+                        .subscribe((ans) => {
+                            console.log(ans.result)
+
+                            // this.listenForTransactionToMine(
+                            //     ans.result,
+                            //     this.provider!
+                            // ).then(() => {})
+                        })
+                })
+            })
     }
 
     vote(proposalId: string, voteAmount: string) {

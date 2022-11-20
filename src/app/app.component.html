@@ -33,13 +33,17 @@
                         {{ walletAddress }}
                     </p>
                 </div>
-                <p class="lead fw-bold text-black">The token contract address is:</p>
+                <p class="lead fw-bold text-black">
+                    The token contract address is:
+                </p>
                 <div>
                     <p class="fw-bold text-black">
                         {{ ERC20VOTES_ADDRESS }}
                     </p>
                 </div>
-                <p class="lead fw-bold text-black">The ballot contract address is:</p>
+                <p class="lead fw-bold text-black">
+                    The ballot contract address is:
+                </p>
                 <div>
                     <p class="fw-bold text-black">
                         {{ BALLOT_ADDRESS }}
@@ -59,7 +63,7 @@
                     </div>
                     <div class="card gap-3 text-black fw-bold divBgColor">
                         <p class="pUpSmallTopSpace">Voting tokens are:</p>
-                        <p class="pDownSmallTopSpace">{{ votingPower }}</p>
+                        <p class="pDownSmallTopSpace">{{ votingTokens }}</p>
                     </div>
                 </div>
                 <div
@@ -83,7 +87,31 @@
                 <div
                     class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
                 >
-                    <p class="fw-bold text-black pUpSmallTopSpace">Request voting tokens:</p>
+                    <div
+                        *ngIf="blocksRemainingStr !== '0'"  
+                        class="card gap-3 text-black fw-bold divBgColor cardBig"
+                    >
+                        <p class="pUpSmallTopSpace card-text">Block remaining to vote:</p>
+                        <p class="pDownSmallTopSpace">
+                            {{ blocksRemaining }}
+                        </p>
+                    </div>
+                    <div
+                        *ngIf="blocksRemainingStr == '0'"
+                        class="card gap-3 text-black fw-bold divBgColor cardBig"
+                    >
+                        <p class="pUpSmallTopSpace card-text">voting power is:</p>
+                        <p class="pDownSmallTopSpace">
+                            {{ votingPower }}
+                        </p>
+                    </div>
+                </div>
+                <div
+                    class="d-grid gap-2 d-sm-flex justify-content-sm-center sepLine"
+                >
+                    <p class="fw-bold text-black pUpSmallTopSpace">
+                        Request voting tokens:
+                    </p>
                     <button
                         (click)="requestToken()"
                         type="button"
@@ -109,7 +137,7 @@
                         #voteAmount
                         type="number"
                         min="0"
-                        [max]="votingPower"
+                        [max]="votingTokens"
                         placeholder="number of votes"
                     />
                     <button
