@@ -28,7 +28,7 @@ body {
 .pUpSmallTopSpace {
     margin-top: 10px;
     margin-bottom: 2px;
-    line-height: 8px;
+    line-height: 20px;
 }
 
 .pMiddleSmallTopSpace {
@@ -39,12 +39,14 @@ body {
 .pDownSmallTopSpace {
     margin-top: 2px;
     margin-bottom: 10px;
-    line-height: 8px;
+    line-height: 20px;
 }
 
 .sepLine {
-   border-top: 3px solid black;
+    border-top: 3px solid black;
     margin-top: 10px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .inpText {
@@ -56,8 +58,4 @@ body {
 
 .buttonSize {
     height: 2x;
-}
-
-.cardBig {
-    width: fit-content;
 }

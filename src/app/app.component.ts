@@ -11,6 +11,18 @@ declare global {
     }
 }
 
+export class eventsClass {
+    voter: string
+    proposal: string
+    amount: string
+
+    constructor(_voter: string, _proposal: string, _amount: string) {
+        this.voter = _voter
+        this.proposal = _proposal
+        this.amount = _amount
+    }
+}
+
 @Component({
     selector: "app-root",
     templateUrl: "./app.component.html",
@@ -41,6 +53,8 @@ export class AppComponent {
 
     abiCoder = new ethers.utils.AbiCoder()
 
+    lastFiveEvents: eventsClass[]
+
     constructor(private http: HttpClient) {
         this.txHash = "0x"
         this.http
@@ -55,6 +69,11 @@ export class AppComponent {
             })
         this.blocksRemaining = 0
         this.blocksRemainingStr = "1"
+        this.lastFiveEvents = [new eventsClass("0", "0", "0")]
+        this.lastFiveEvents.push(new eventsClass("0", "0", "0"))
+        this.lastFiveEvents.push(new eventsClass("0", "0", "0"))
+        this.lastFiveEvents.push(new eventsClass("0", "0", "0"))
+        this.lastFiveEvents.push(new eventsClass("0", "0", "0"))
     }
 
     createWallet() {
@@ -131,7 +150,6 @@ export class AppComponent {
                     (winnerIdx: any) => {
                         this.ballotContract!["proposals"](winnerIdx).then(
                             (winner: any) => {
-                                console.log(winner.voteCount)
                                 this.winningVotes = winner.voteCount.toString()
                             }
                         )
@@ -235,7 +253,6 @@ export class AppComponent {
                                 this.ballotContract!["proposals"](
                                     winnerIdx
                                 ).then((winner: any) => {
-                                    console.log(winner.voteCount)
                                     this.winningVotes =
                                         winner.voteCount.toString()
                                 })
@@ -288,49 +305,82 @@ export class AppComponent {
     }
 
     vote(proposalId: string, voteAmount: string) {
-        if (typeof this.provider !== "undefined") {
-            console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
-            this.ballotContract!.connect(this.wallet!)
-                ["vote"](proposalId, voteAmount)
-                .then((txResponse: ethers.providers.TransactionResponse) => {
-                    this.listenForTransactionToMine(
-                        txResponse,
-                        this.provider!
-                    ).then(() => {})
-                })
-        }
+        console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
+        this.ballotContract!["vote"](proposalId, voteAmount).then(
+            (txResponse: ethers.providers.TransactionResponse) => {
+                this.listenForTransactionToMine(
+                    txResponse,
+                    this.provider!
+                ).then(() => {})
+            }
+        )
+    }
+
+    voteWithPermit(proposalId: string, voteAmount: string) {
+        console.log(`Trying to vote ${voteAmount} times for ${proposalId}`)
+
+        this.ballotContract!["permit"](proposalId, voteAmount).then(
+            (txResponse: ethers.providers.TransactionResponse) => {
+                this.listenForTransactionToMine(
+                    txResponse,
+                    this.provider!
+                ).then(() => {})
+            }
+        )
     }
 
     delegateVote(account: string) {
-        if (typeof this.provider !== "undefined") {
-            console.log(`Trying to delegate votes to ${account}`)
-
-            this.tokenContract!["delegate"](account).then(
-                (txResponse: ethers.providers.TransactionResponse) => {
-                    this.listenForTransactionToMine(
-                        txResponse,
-                        this.provider!
-                    ).then(() => {})
-                }
-            )
-        }
+        console.log(`Trying to delegate votes to ${account}`)
+        this.tokenContract!["delegate"](account).then(
+            (txResponse: ethers.providers.TransactionResponse) => {
+                this.listenForTransactionToMine(
+                    txResponse,
+                    this.provider!
+                ).then(() => {})
+            }
+        )
     }
 
     listenForTransactionToMine(
-        transactionResponce: ethers.providers.TransactionResponse,
+        transactionResponce: ethers.ContractTransaction,
         provider: ethers.providers.BaseProvider | ethers.providers.Web3Provider
-    ): Promise<void> {
+    ): Promise<any> {
         this.txHash = transactionResponce.hash
         console.log(`Mining ${transactionResponce.hash}`)
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<any | void>((resolve, reject) => {
             provider.once(
                 transactionResponce.hash,
-                (transactionreceipt: ethers.providers.TransactionReceipt) => {
+                (transactionreceipt: ethers.ContractReceipt) => {
                     console.log(
                         `Completed with ${transactionreceipt.confirmations} confirmations`
                     )
+
+                    console.log(transactionreceipt);
+                    
+                    const eventVoter = "0x" + transactionreceipt.logs[0].topics[1].slice(26, 66)
+                    console.log(eventVoter);
+                    
+                    const eventProposal = "'" + transactionreceipt.logs[0].topics[2].slice(-4, 66) + "'" 
+                    const eventAmount = "'" + transactionreceipt.logs[0].topics[3].slice(-4, 66) + "'"
+
+                    console.log(eventProposal)
+                    console.log(eventAmount);
+                    
+                    
+                    this.lastFiveEvents.push(
+                        new eventsClass(
+                            eventVoter,
+                            eventProposal,
+                            eventAmount
+                        )
+                    )
+                    console.log(this.lastFiveEvents)
+
+                    if (this.lastFiveEvents.length > 5) {
+                        this.lastFiveEvents.shift()
+                    }
                     this.txHash = "0x"
-                    resolve()
+                    resolve(transactionreceipt)
                 }
             )
         })
